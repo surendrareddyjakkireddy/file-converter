@@ -1,0 +1,284 @@
+<!--<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DOCX to PDF Converter</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 350px;
+            margin: auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            margin: 15px 0;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: gray;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .loader {
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>DOCX → PDF Converter</h2>
+
+    <input type="file" id="fileInput" accept=".docx" />
+    <br>
+
+    <button id="convertBtn" onclick="uploadFile()">Convert</button>
+
+    <div class="loader" id="loader">⏳ Converting...</div>
+
+    <p class="status" id="status"></p>
+</div>
+
+<script>
+async function uploadFile() {
+    const fileInput = document.getElementById("fileInput");
+    const status = document.getElementById("status");
+    const loader = document.getElementById("loader");
+    const button = document.getElementById("convertBtn");
+
+    status.innerText = "";
+    status.className = "status";
+
+    // 🔍 Validation
+    if (!fileInput.files.length) {
+        status.innerText = "Please select a file.";
+        status.classList.add("error");
+        return;
+    }
+
+    const file = fileInput.files[0];
+
+    // File type validation
+    if (!file.name.endsWith(".docx")) {
+        status.innerText = "Only DOCX files are allowed.";
+        status.classList.add("error");
+        return;
+    }
+
+    // File size validation (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        status.innerText = "File size must be less than 5MB.";
+        status.classList.add("error");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        loader.style.display = "block";
+        button.disabled = true;
+        status.innerText = "Uploading and converting...";
+
+        const response = await fetch("http://localhost:8084/api/file/service/docx-to-pdf", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error("Conversion failed on server");
+        }
+
+        const blob = await response.blob();
+
+        // 📥 Download file
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "converted.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        status.innerText = "✅ Conversion successful! Download started.";
+        status.classList.add("success");
+
+    } catch (error) {
+        status.innerText = "❌ Error: " + error.message;
+        status.classList.add("error");
+    } finally {
+        loader.style.display = "none";
+        button.disabled = false;
+    }
+}
+</script>
+
+</body>
+</html>-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DOCX to PDF Converter</title>
+
+<style>
+    body {
+        font-family: Arial;
+        background: #f4f6f8;
+        text-align: center;
+        padding: 50px;
+    }
+
+    .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        width: 350px;
+        margin: auto;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    button {
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    button:disabled {
+        background: gray;
+    }
+
+    #downloadBtn {
+        display: none;
+        background: green;
+    }
+
+    .error { color: red; }
+    .success { color: green; }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>DOCX → PDF Converter</h2>
+
+    <input type="file" id="fileInput" accept=".docx" /><br>
+
+    <button onclick="uploadFile()" id="convertBtn">Convert</button>
+
+    <!-- ✅ NEW DOWNLOAD BUTTON -->
+    <button id="downloadBtn" onclick="downloadFile()">Download PDF</button>
+
+    <p id="status"></p>
+</div>
+
+<script>
+let pdfUrl = null; // store file URL
+
+async function uploadFile() {
+    const fileInput = document.getElementById("fileInput");
+    const status = document.getElementById("status");
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    status.innerText = "";
+    downloadBtn.style.display = "none";
+
+    if (!fileInput.files.length) {
+        status.innerText = "Select a file!";
+        status.className = "error";
+        return;
+    }
+
+    const file = fileInput.files[0];
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        status.innerText = "Converting...";
+
+        const response = await fetch("http://localhost:8084/api/file/service/docx-to-pdf", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) throw new Error("Conversion failed");
+
+        const blob = await response.blob();
+
+        // ✅ Store URL instead of auto download
+        pdfUrl = window.URL.createObjectURL(blob);
+
+        status.innerText = "✅ Conversion completed!";
+        status.className = "success";
+
+        // ✅ Show download button
+        downloadBtn.style.display = "inline-block";
+
+    } catch (err) {
+        status.innerText = "❌ Error: " + err.message;
+        status.className = "error";
+    }
+}
+
+// ✅ Download only when button clicked
+function downloadFile() {
+    if (!pdfUrl) return;
+
+    const a = document.createElement("a");
+    a.href = pdfUrl;
+    a.download = "converted.pdf";
+    a.click();
+}
+</script>
+
+</body>
+</html>
