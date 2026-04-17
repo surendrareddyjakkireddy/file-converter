@@ -13,44 +13,43 @@ import com.file.service.FileService;
 public class FileServiceImpl implements FileService {
 
 	public byte[] convertToPdf(MultipartFile file) {
-        try {
-            String tempDir = System.getProperty("java.io.tmpdir");
+		try {
+			String tempDir = System.getProperty("java.io.tmpdir");
+			String inputFileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+			File inputFile = new File(tempDir, inputFileName);
+			file.transferTo(inputFile);
 
-            String inputFileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            File inputFile = new File(tempDir, inputFileName);
-            file.transferTo(inputFile);
+			// Output PDF path
+			String outputFileName = inputFileName.replaceAll("\\.[^.]+$", ".pdf");
+			File outputFile = new File(tempDir, outputFileName);
 
-            // Output PDF path
-            String outputFileName = inputFileName.replaceAll("\\.[^.]+$", ".pdf");
-            File outputFile = new File(tempDir, outputFileName);
+			String sofficePath = "C:\\Program Files\\LibreOffice\\program\\soffice.exe";
 
-            String sofficePath = "C:\\Program Files\\LibreOffice\\program\\soffice.exe";
+			ProcessBuilder processBuilder = new ProcessBuilder(
+					sofficePath,
+					"--headless",
+					"--convert-to", "pdf",
+					"--outdir", tempDir,
+					inputFile.getAbsolutePath()
+					);
 
-            ProcessBuilder processBuilder = new ProcessBuilder(
-                    sofficePath,
-                    "--headless",
-                    "--convert-to", "pdf",
-                    "--outdir", tempDir,
-                    inputFile.getAbsolutePath()
-            );
+			processBuilder.redirectErrorStream(true);
+			Process process = processBuilder.start();
+			process.waitFor();
 
-            processBuilder.redirectErrorStream(true);
-            Process process = processBuilder.start();
-            process.waitFor();
+			// Read PDF
+			byte[] pdfBytes = Files.readAllBytes(outputFile.toPath());
 
-            // Read PDF
-            byte[] pdfBytes = Files.readAllBytes(outputFile.toPath());
+			// Cleanup
+			inputFile.delete();
+			outputFile.delete();
 
-            // Cleanup
-            inputFile.delete();
-            outputFile.delete();
+			return pdfBytes;
 
-            return pdfBytes;
-
-        } catch (Exception e) {
-        	e.printStackTrace();
-            throw new RuntimeException("Conversion failed", e);
-        }
-    }
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Conversion failed", e);
+		}
+	}
 
 }
